@@ -8,7 +8,7 @@ export default function AdminLogin({ onLoginSuccess }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin') {
+    if (username === 'adminRushi' && password === 'RushiSneha') {
       setError('');
       onLoginSuccess();
     } else {
