@@ -16,6 +16,11 @@ app.use(express.json({ limit: '20mb' }));
 // Initialize database
 db.init();
 
+// GET / - Root health check
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'Meesho Scraper Backend is running.' });
+});
+
 // POST /api/login - Secure admin authentication (credentials stored server-side only)
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;

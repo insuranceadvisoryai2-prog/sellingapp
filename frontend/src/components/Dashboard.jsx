@@ -47,7 +47,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
     try {
       // Step 1: Scrape product page
-      const scrapeRes = await fetch('${API_URL}/api/scrape', {
+      const scrapeRes = await fetch(`${API_URL}/api/scrape`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -63,7 +63,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
       // Step 2: Trigger AI rewrite
       setLoadingStep('rewriting');
-      const rewriteRes = await fetch('${API_URL}/api/rewrite', {
+      const rewriteRes = await fetch(`${API_URL}/api/rewrite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: scraped.title, description: scraped.description })
@@ -104,7 +104,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
     };
 
     try {
-      const res = await fetch('${API_URL}/api/publish', {
+      const res = await fetch(`${API_URL}/api/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -220,20 +220,31 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                       setLoadingStep('scraping');
                       setError(null);
                       try {
-                        // Extract __NEXT_DATA__ JSON from HTML string
-                        const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-                        if (!match) throw new Error("Could not find product data in pasted HTML.");
-                        const jsonData = JSON.parse(match[1]);
-                        
-                        const res = await fetch('${API_URL}/api/publish-direct', {
+                        const res = await fetch(`${API_URL}/api/parse-html`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(jsonData)
+                          body: JSON.stringify({ html })
                         });
-                        if (!res.ok) throw new Error("Failed to process data");
-                        const result = await res.json();
-                        setSuccessMsg('Product successfully extracted and published to your catalog!');
-                        if (onPublishSuccess) onPublishSuccess();
+                        if (!res.ok) {
+                          const errData = await res.json();
+                          throw new Error(errData.error || 'Failed to parse HTML.');
+                        }
+                        const scraped = await res.json();
+                        setScrapedData(scraped);
+
+                        // Step 2: Trigger AI rewrite step
+                        setLoadingStep('rewriting');
+                        const rewriteRes = await fetch(`${API_URL}/api/rewrite`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ title: scraped.title, description: scraped.description })
+                        });
+                        if (!rewriteRes.ok) {
+                          const errData = await rewriteRes.json();
+                          throw new Error(errData.error || 'AI rewrite generation failed.');
+                        }
+                        const ai = await rewriteRes.json();
+                        setAiData(ai);
                         setLoadingStep(null);
                       } catch (err) {
                         setError(err.message);

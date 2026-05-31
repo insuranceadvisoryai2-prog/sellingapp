@@ -44,7 +44,7 @@ export default function AdminOrders() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('${API_URL}/api/orders');
+      const res = await fetch(`${API_URL}/api/orders`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load orders.');
       setOrders(data);
