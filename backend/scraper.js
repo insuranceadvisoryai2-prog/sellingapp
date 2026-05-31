@@ -539,36 +539,94 @@ function parseFromHtml(html) {
 
   // Try __NEXT_DATA__ first
   const nextScript = $('#__NEXT_DATA__').html();
+  let nextDataProduct = null;
   if (nextScript) {
     try {
       const parsed = JSON.parse(nextScript);
-      const raw = deepFindProduct(parsed);
-      if (raw) {
-        console.log('  âœ… Parsed product from pasted HTML __NEXT_DATA__');
-        return buildProductData(raw, 'https://www.meesho.com');
-      }
+      nextDataProduct = deepFindProduct(parsed);
     } catch (e) {
-      console.log('  âš  JSON parse error:', e.message);
+      console.log('  ⚠️ JSON parse error:', e.message);
     }
   }
 
-  // CSS selector fallback
-  const title = $('h1').first().text().trim();
+  // Get title
+  const title = nextDataProduct?.hero_product_name || nextDataProduct?.name || nextDataProduct?.title || nextDataProduct?.product_name || nextDataProduct?.description || $('h1').first().text().trim() || 'Unknown Product';
+
+  // Get prices
+  const priceInfo = nextDataProduct ? pickPriceInfo(nextDataProduct) : null;
   const priceText = $('span[class*="Price"], h3[class*="Price"], h4[class*="Price"]').first().text().trim();
+  const price = priceInfo ? priceInfo.price : parsePrice(priceText);
+  const originalPriceText = priceInfo ? `₹${priceInfo.originalPrice}` : (priceText || '₹0');
+
+  // Extract description
+  const description = nextDataProduct?.full_details || nextDataProduct?.description || nextDataProduct?.product_description || nextDataProduct?.product_details || nextDataProduct?.share_text || '';
+
+  // Extract category
+  const category = nextDataProduct?.sub_sub_category_name || nextDataProduct?.category_name || nextDataProduct?.subcategory || nextDataProduct?.category || '';
+
+  // Extract specs
+  const specs = nextDataProduct ? extractSpecs(nextDataProduct) : {};
+
+  // --- Ultra-robust image extraction ---
   const imgs = [];
+
+  // 1. If we got product data from __NEXT_DATA__, use its images first
+  if (nextDataProduct) {
+    const nextImages = extractAllImages(nextDataProduct);
+    for (const img of nextImages) {
+      if (!imgs.includes(img)) imgs.push(img);
+    }
+  }
+
+  // 2. Scan all img tags in the HTML (including srcset and other attributes)
   $('img').each((_, el) => {
-    const src = $(el).attr('src') || $(el).attr('data-src');
-    if (src && src.includes('images.meesho.com') && !imgs.includes(src)) imgs.push(src);
+    const attribs = el.attribs || {};
+    for (const key of Object.keys(attribs)) {
+      const val = attribs[key];
+      if (!val || typeof val !== 'string') continue;
+
+      if (key.toLowerCase() === 'srcset') {
+        const parts = val.split(',');
+        for (const part of parts) {
+          const urlMatch = part.trim().split(/\s+/)[0];
+          if (urlMatch && urlMatch.startsWith('http') && (urlMatch.includes('images.meesho.com') || urlMatch.match(/\.(jpg|jpeg|png|webp)/i))) {
+            const clean = urlMatch.replace(/\\/g, '').split(/[")'>\s]/)[0];
+            const highRes = clean.replace(/_\d+\.(jpg|jpeg|png|webp)/g, '.$1').replace(/_\d+\.jpg/g, '.jpg');
+            if (highRes && !imgs.includes(highRes)) imgs.push(highRes);
+          }
+        }
+      } else {
+        if (val.startsWith('http') && (val.includes('images.meesho.com') || val.match(/\.(jpg|jpeg|png|webp)/i))) {
+          const clean = val.replace(/\\/g, '').split(/[")'>\s]/)[0];
+          const highRes = clean.replace(/_\d+\.(jpg|jpeg|png|webp)/g, '.$1').replace(/_\d+\.jpg/g, '.jpg');
+          if (highRes && !imgs.includes(highRes)) imgs.push(highRes);
+        }
+      }
+    }
   });
 
+  // 3. Scan the raw HTML string using regex to catch any other Meesho CDN URLs
+  const cdnRegex = /https:\/\/images\.meesho\.com\/[^\s"'>]+/g;
+  const matches = html.match(cdnRegex) || [];
+  for (const match of matches) {
+    let clean = match.replace(/\\/g, '');
+    clean = clean.split(/[")'>\s]/)[0];
+    if (clean && clean.startsWith('http')) {
+      const highRes = clean.replace(/_\d+\.(jpg|jpeg|png|webp)/g, '.$1').replace(/_\d+\.jpg/g, '.jpg');
+      if (highRes && !imgs.includes(highRes)) imgs.push(highRes);
+    }
+  }
+
+  // --- End of ultra-robust image extraction ---
+
   return {
-    title: title || 'Unknown Product',
-    price: parsePrice(priceText),
-    originalPrice: priceText || 'â‚¹0',
-    images: imgs.map(u => u.replace(/_\d+\.jpg/g, '.jpg')),
-    description: '',
-    specifications: {},
-    category_hint: '',
+    title: String(title).trim(),
+    price: price,
+    originalPrice: originalPriceText,
+    images: imgs,
+    description: description,
+    specifications: specs,
+    category_hint: category,
   };
 }
 
