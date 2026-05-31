@@ -3,6 +3,7 @@ import {
   Link2, Sparkles, RefreshCw, CheckCircle2, AlertTriangle, 
   ArrowRight, ShieldAlert, Edit3, Save, ExternalLink, DownloadCloud 
 } from 'lucide-react';
+import API_URL from '../api';
 
 export default function Dashboard({ onPublishSuccess, subcategories }) {
   const [url, setUrl] = useState('');
@@ -46,7 +47,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
     try {
       // Step 1: Scrape product page
-      const scrapeRes = await fetch('http://localhost:5000/api/scrape', {
+      const scrapeRes = await fetch('${API_URL}/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -62,7 +63,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
       // Step 2: Trigger AI rewrite
       setLoadingStep('rewriting');
-      const rewriteRes = await fetch('http://localhost:5000/api/rewrite', {
+      const rewriteRes = await fetch('${API_URL}/api/rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: scraped.title, description: scraped.description })
@@ -103,7 +104,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/publish', {
+      const res = await fetch('${API_URL}/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -224,7 +225,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                         if (!match) throw new Error("Could not find product data in pasted HTML.");
                         const jsonData = JSON.parse(match[1]);
                         
-                        const res = await fetch('http://localhost:5000/api/publish-direct', {
+                        const res = await fetch('${API_URL}/api/publish-direct', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify(jsonData)

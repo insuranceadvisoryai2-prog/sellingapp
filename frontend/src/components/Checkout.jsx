@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CustomerForm from './CustomerForm';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-
+import API_URL from '../api';
 /**
  * Checkout page displayed after clicking "Buy" on a product.
  * Shows a brief product summary and collects customer details.
@@ -12,7 +12,7 @@ export default function Checkout({ product, onCancel, onOrderSuccess }) {
   const handleSubmit = async (customerDetails) => {
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/checkout', {
+      const res = await fetch(`${API_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: product.id, customerDetails }),

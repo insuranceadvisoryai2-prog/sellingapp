@@ -16,6 +16,17 @@ app.use(express.json({ limit: '20mb' }));
 // Initialize database
 db.init();
 
+// POST /api/login - Secure admin authentication (credentials stored server-side only)
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const validUser = process.env.ADMIN_USERNAME || 'adminRushi';
+  const validPass = process.env.ADMIN_PASSWORD || 'RushiSneha';
+  if (username === validUser && password === validPass) {
+    return res.json({ success: true });
+  }
+  return res.status(401).json({ success: false, error: 'Invalid credentials' });
+});
+
 // POST /api/scrape - Scrape product details from Meesho URL
 app.post('/api/scrape', async (req, res) => {
   const { url } = req.body;

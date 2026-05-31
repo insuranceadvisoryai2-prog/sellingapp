@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Edit3, Save, Search, Trash2, X, IndianRupee, Image as ImageIcon, ExternalLink } from 'lucide-react';
-
+import API_URL from '../api';
 const emptyEdit = {
   rewrittenTitle: '',
   price: 0,
@@ -102,7 +102,7 @@ export default function AdminCatalogManager({ products, subcategories, onProduct
       if (!payload.rewrittenTitle) throw new Error('Product title is required.');
       if (!Number.isFinite(payload.price) || payload.price < 0) throw new Error('Price must be a valid number.');
 
-      const res = await fetch(`http://localhost:5000/api/products/${editingProduct.id}`, {
+      const res = await fetch(`${API_URL}/api/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -128,7 +128,7 @@ export default function AdminCatalogManager({ products, subcategories, onProduct
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${product.id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/products/${product.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete product.');
       if (editingProduct?.id === product.id) cancelEdit();

@@ -4,7 +4,7 @@ import {
   IndianRupee, Package, Calendar, Mail, Phone, MapPin,
   ChevronDown, ChevronUp, Hash, ExternalLink
 } from 'lucide-react';
-
+import API_URL from '../api';
 const orderStatuses = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'];
 const paymentStatuses = ['Unpaid', 'Paid', 'Refunded'];
 
@@ -44,7 +44,7 @@ export default function AdminOrders() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/orders');
+      const res = await fetch('${API_URL}/api/orders');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load orders.');
       setOrders(data);
@@ -82,7 +82,7 @@ export default function AdminOrders() {
     setSavingId(order.id);
     setError('');
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${order.id}`, {
+      const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),

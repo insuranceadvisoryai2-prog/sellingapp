@@ -5,6 +5,7 @@ import Checkout from './components/Checkout';
 import LandingPage from './components/LandingPage';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
+import API_URL from './api';
 
 export default function App() {
   // Navigation states: 'landing', 'login', 'admin'
@@ -39,7 +40,7 @@ export default function App() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/products');
+      const res = await fetch(`${API_URL}/api/products`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -60,7 +61,7 @@ export default function App() {
 
   const fetchSubcategories = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/subcategories');
+      const res = await fetch(`${API_URL}/api/subcategories`);
       if (res.ok) {
         const data = await res.json();
         setSubcategories(data);

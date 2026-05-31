@@ -1,18 +1,34 @@
 import React, { useState } from 'react';
-import { Lock, User, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, User, ArrowRight } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function AdminLogin({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username === 'adminRushi' && password === 'RushiSneha') {
-      setError('');
-      onLoginSuccess();
-    } else {
-      setError('Invalid username or password');
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        onLoginSuccess();
+      } else {
+        setError(data.error || 'Invalid username or password');
+      }
+    } catch (err) {
+      setError('Unable to connect to server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,10 +89,11 @@ export default function AdminLogin({ onLoginSuccess }) {
 
             <button
               type="submit"
-              className="w-full mt-2 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-violet to-brand-pink hover:opacity-90 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-brand-pink/25 group"
+              disabled={loading}
+              className="w-full mt-2 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-violet to-brand-pink hover:opacity-90 disabled:opacity-60 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-brand-pink/25 group"
             >
-              <span>Access Dashboard</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>{loading ? 'Authenticating...' : 'Access Dashboard'}</span>
+              {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
             </button>
           </form>
         </div>
