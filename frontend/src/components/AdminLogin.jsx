@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, ArrowRight } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://pretty-numbers-drive.loca.lt';
 
 export default function AdminLogin({ onLoginSuccess }) {
   const [username, setUsername] = useState('');

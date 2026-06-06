@@ -77,7 +77,15 @@ function generateMockRewrite(title, description) {
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
   
   const rewrittenTitle = `${prefix} ${cleanTitle}`;
-  const sellingDescription = `Experience ultimate style and comfort with this premium product, designed to meet your daily lifestyle needs. With its high-quality materials and durable construction, it makes a perfect addition to your collection.`;
+
+  const sellingDescriptions = [
+    `Experience ultimate style and comfort with this premium product, designed to elevate your everyday lifestyle. Built with high-quality materials, it guarantees both durability and elegance.`,
+    `Discover the perfect blend of functionality and modern aesthetics. This outstanding item has been meticulously crafted to offer unparalleled performance and lasting value.`,
+    `Step up your game with this top-tier product. It boasts an exceptional finish and reliable construction, making it an absolute must-have for anyone seeking true quality.`,
+    `Transform your daily routine with this exquisite find. Designed with precision and care, it promises a satisfying user experience that simply stands out from the rest.`,
+    `A remarkable piece that delivers on every front. From its stunning visual appeal to its robust functionality, this product is tailored for those who accept nothing but the best.`
+  ];
+  const sellingDescription = sellingDescriptions[Math.floor(Math.random() * sellingDescriptions.length)];
 
   return {
     rewritten_title: rewrittenTitle.substring(0, 70),
@@ -99,7 +107,9 @@ async function rewriteProductDetails(title, description) {
 
   try {
     const anthropic = new Anthropic({ apiKey });
-    const prompt = `You are a product copywriter. Given a product title and description scraped from Meesho, rewrite the title to be catchy, clear, and SEO-optimized (max 70 chars). Also write a 2-sentence selling description. Detect the most appropriate subcategory from this list: [Electronics, Mobile Phones, Laptops, Fashion - Men, Fashion - Women, Kids, Home & Kitchen, Beauty, Sports, Toys, Books, Automotive].
+    const prompt = `You are a product copywriter. Given a product title and description scraped from Meesho, rewrite the title to be catchy, clear, and SEO-optimized (max 70 chars). 
+Also write a unique, varied, and highly positive 2-sentence selling description (do NOT just repeat the same generic text for every product, highlight its specific features if possible).
+Detect the most appropriate subcategory from this list: [Electronics, Mobile Phones, Laptops, Fashion - Men, Fashion - Women, Kids, Home & Kitchen, Beauty, Sports, Toys, Books, Automotive].
 
 Product Title: "${title}"
 Product Description: "${description}"

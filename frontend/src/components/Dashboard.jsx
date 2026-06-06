@@ -17,13 +17,13 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
   const [editedDesc, setEditedDesc] = useState('');
   const [editedSubcat, setEditedSubcat] = useState('');
   const [editedPrice, setEditedPrice] = useState(0);
-  const [editedImage, setEditedImage] = useState('');
+  const [editedImages, setEditedImages] = useState([]);
 
   // Sync edit form states when new data is generated
   useEffect(() => {
     if (scrapedData) {
       setEditedPrice(scrapedData.price || 0);
-      setEditedImage(scrapedData.images?.[0] || '');
+      setEditedImages(scrapedData.images || []);
     }
   }, [scrapedData]);
 
@@ -97,7 +97,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
       originalPrice: scrapedData.originalPrice,
       description: scrapedData.description,
       sellingDescription: editedDesc,
-      images: editedImage ? [editedImage, ...scrapedData.images.slice(1)] : scrapedData.images,
+      images: editedImages.length > 0 ? editedImages : scrapedData.images,
       specifications: scrapedData.specifications,
       subcategory: editedSubcat,
       parentCategory: aiData?.parent_category || 'Other'
@@ -364,7 +364,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
               {/* Description override */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">AI Selling Description</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Selling Description</label>
                 <textarea
                   rows={3}
                   value={editedDesc}
@@ -393,7 +393,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Price override */}
-                <div className="space-y-2">
+                <div className="space-y-2 col-span-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Selling Price (₹)</label>
                   <input
                     type="number"
@@ -403,16 +403,49 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                   />
                 </div>
 
-                {/* Main Image override */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Main Image URL</label>
-                  <input
-                    type="url"
-                    value={editedImage}
-                    onChange={(e) => setEditedImage(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-4 py-3 rounded-xl glass-input text-white text-sm border-white/10"
-                  />
+                {/* Images override */}
+                <div className="space-y-2 col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Product Images ({editedImages.length})</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {editedImages.slice(0, 5).map((img, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 group shrink-0">
+                        <img src={img} className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => setEditedImages(editedImages.filter((_, idx) => idx !== i))}
+                          className="absolute inset-0 bg-red-500/80 items-center justify-center hidden group-hover:flex text-white font-bold text-[10px]"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {editedImages.length < 5 && (
+                      <label className="w-16 h-16 bg-dark-800 hover:bg-brand-pink/20 text-slate-300 hover:text-brand-pink border border-dashed border-white/20 rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center shrink-0 text-[10px] font-bold uppercase">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          multiple
+                          className="hidden" 
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files).slice(0, 5 - editedImages.length);
+                            if (files.length > 0) {
+                              Promise.all(files.map(file => {
+                                return new Promise((resolve) => {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => resolve(reader.result);
+                                  reader.readAsDataURL(file);
+                                });
+                              })).then(newImages => {
+                                setEditedImages([...newImages, ...editedImages].slice(0, 5));
+                              });
+                            }
+                          }} 
+                        />
+                        <span className="text-xl leading-none mb-1">+</span>
+                        Add
+                      </label>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 block">Upload up to 5 local images. Hover over an image to remove it.</span>
                 </div>
               </div>
 

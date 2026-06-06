@@ -7,7 +7,7 @@ import { User, Mail, Phone, MapPin, CheckCircle, AlertCircle } from 'lucide-reac
  *   onSubmit: (details: CustomerDetails) => void
  *   onCancel?: () => void
  */
-export default function CustomerForm({ onSubmit, onCancel }) {
+export default function CustomerForm({ onSubmit, onCancel, submitLabel = 'Save Details', disabled = false }) {
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -196,10 +196,11 @@ export default function CustomerForm({ onSubmit, onCancel }) {
           )}
           <button
             type="submit"
-            className="px-5 py-2.5 bg-brand-pink hover:opacity-90 text-white font-medium rounded-xl flex items-center gap-2 shadow-md shadow-brand-pink/20 transition-all"
+            disabled={disabled}
+            className="px-5 py-2.5 bg-brand-pink hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-xl flex items-center gap-2 shadow-md shadow-brand-pink/20 transition-all"
           >
             <CheckCircle className="w-4 h-4" />
-            Save Details
+            {submitLabel}
           </button>
         </div>
       </form>

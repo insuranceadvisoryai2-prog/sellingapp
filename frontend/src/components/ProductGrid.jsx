@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, ShoppingBag, PlusCircle, AlertCircle } from 'lucide-react';
 import ProductCard from './ProductCard';
 
-export default function ProductGrid({ products, subcategories, activeCategory, setActiveCategory, onNavigateToDashboard, onViewDetails, onBuy }) {
+export default function ProductGrid({ products, subcategories, activeCategory, setActiveCategory, onNavigateToDashboard, onViewDetails, onBuy, onAddToCart }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Local filtering: search query + active subcategory category
@@ -78,7 +78,8 @@ export default function ProductGrid({ products, subcategories, activeCategory, s
               key={product.id} 
               product={product} 
               onViewDetails={onViewDetails} 
-              onBuy={onBuy} 
+              onBuy={onBuy}
+              onAddToCart={onAddToCart}
             />
           ))}
         </div>

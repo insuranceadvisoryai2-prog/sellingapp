@@ -32,15 +32,15 @@ export default function LandingPage(props) {
             <span className="text-xs font-bold text-white uppercase tracking-widest">Premium Selection</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6 font-sans">
-            Curated Products, <br />
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6 font-sans animate-fade-in-up">
+            Best Wholesale Deals, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-brand-violet">
-              Unbeatable Prices.
+              Delivered to You.
             </span>
           </h1>
           
-          <p className="text-sm md:text-base text-slate-300 mb-8 max-w-lg leading-relaxed">
-            Discover our latest collection of premium curated items. AI-optimized descriptions, high-quality images, and the best deals imported directly for you.
+          <p className="text-sm md:text-base text-slate-300 mb-8 max-w-lg leading-relaxed animate-fade-in-up-delay-1">
+            Discover premium products at unbeatable wholesale prices. Top quality items handpicked from trusted suppliers, delivered directly to your doorstep.
           </p>
           
           <button
@@ -48,7 +48,7 @@ export default function LandingPage(props) {
               // Smooth scroll to the products grid
               document.getElementById('trending-products')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="px-8 py-4 bg-brand-pink hover:bg-brand-pink/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-pink/30 flex items-center gap-2 hover:scale-105"
+            className="px-8 py-4 bg-brand-pink hover:bg-brand-pink/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-pink/30 flex items-center gap-2 hover:scale-105 animate-fade-in-up-delay-2"
           >
             <ShoppingBag className="w-5 h-5" />
             Shop Now
@@ -126,7 +126,7 @@ export default function LandingPage(props) {
 
       {/* Main Product Grid */}
       <div id="trending-products" className="pt-4 scroll-mt-24">
-        <ProductGrid {...props} />
+        <ProductGrid {...props} onAddToCart={props.onAddToCart} />
       </div>
 
     </div>

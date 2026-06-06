@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -16,9 +17,12 @@ app.use(express.json({ limit: '20mb' }));
 // Initialize database
 db.init();
 
-// GET / - Root health check
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: 'Meesho Scraper Backend is running.' });
+// Serve static files from the React frontend build
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// API root health check (moved to /api)
+app.get('/api', (req, res) => {
+  res.json({ status: 'ok', message: 'Meesho Scraper Backend API is running.' });
 });
 
 // POST /api/login - Secure admin authentication (credentials stored server-side only)
@@ -179,28 +183,35 @@ app.put('/api/orders/:id', (req, res) => {
   }
 });
 
-// POST /api/checkout - Place an order with customer details
+// POST /api/checkout - Place an order with cart items and customer details
 app.post('/api/checkout', (req, res) => {
-  const { productId, customerDetails } = req.body;
+  const { items, customerDetails } = req.body;
 
   if (!customerDetails || !customerDetails.name || !customerDetails.email) {
     return res.status(400).json({ error: 'Customer name and email are required.' });
   }
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'At least one item is required.' });
+  }
 
   try {
-    const product = db.getProducts().find(item => item.id === productId);
+    // Enrich items with live product data where possible
+    const allProducts = db.getProducts();
+    const enrichedItems = items.map(item => {
+      const live = allProducts.find(p => p.id === item.productId);
+      return {
+        productId: item.productId || null,
+        title: item.title || live?.rewrittenTitle || 'Unknown Product',
+        price: Number(item.price) || live?.price || 0,
+        qty: Number(item.qty) || 1,
+        image: item.image || live?.images?.[0] || '',
+        subcategory: item.subcategory || live?.subcategory || '',
+        originalUrl: live?.originalUrl || '',
+      };
+    });
+
     const order = db.saveOrder({
-      productId: productId || null,
-      productSnapshot: product ? {
-        id: product.id,
-        title: product.rewrittenTitle || product.originalTitle,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        specialOfferPrice: product.specialOfferPrice || 0,
-        image: product.images && product.images[0] ? product.images[0] : '',
-        subcategory: product.subcategory,
-        originalUrl: product.originalUrl,
-      } : null,
+      items: enrichedItems,
       customer: customerDetails,
       status: 'Pending',
       paymentStatus: 'Unpaid',
@@ -212,8 +223,14 @@ app.post('/api/checkout', (req, res) => {
   }
 });
 
+
+// Catch-all route to serve the React index.html for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+});
+
 // Start Server
 app.listen(PORT, () => {
-  console.log(`ðŸš€ Scraper Backend listening on http://localhost:${PORT}`);
+  console.log(`🚀 Scraper Backend listening on http://localhost:${PORT}`);
 });
 

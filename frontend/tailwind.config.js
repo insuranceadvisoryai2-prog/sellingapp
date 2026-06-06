@@ -26,6 +26,8 @@ export default {
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.4s ease-out both',
+        'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
       }
     },
   },

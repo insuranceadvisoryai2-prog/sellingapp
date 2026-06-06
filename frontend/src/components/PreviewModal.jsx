@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, IndianRupee, Tag, Info, ListFilter, ShoppingCart, Share2 } from 'lucide-react';
+import { X, ExternalLink, IndianRupee, Tag, Info, ListFilter, ShoppingCart, Share2, Plus, Check } from 'lucide-react';
 
-export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
+export default function PreviewModal({ product, isAdmin, onClose, onBuy, onAddToCart }) {
   if (!product) return null;
 
   const [activeImage, setActiveImage] = useState(
@@ -9,6 +9,14 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
       ? product.images[0] 
       : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
   );
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  const handleAddToCart = () => {
+    if (onAddToCart) onAddToCart(product);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 1800);
+  };
 
   const handleShare = async () => {
     const shareData = {
@@ -29,9 +37,9 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-md animate-scale-in">
       {/* Modal Card wrapper */}
-      <div className="glass-panel w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col relative bg-dark-900/90">
+      <div className="glass-panel w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col relative bg-dark-900/90 animate-scale-in">
         
         {/* Top Right Actions */}
         <div className="absolute right-6 top-6 z-10 flex gap-2">
@@ -57,12 +65,18 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
             
             {/* Left: Images Column */}
             <div className="space-y-4">
-              <div className="aspect-square bg-dark-950 rounded-2xl overflow-hidden border border-white/5 flex items-center justify-center">
+              <div 
+                className="aspect-square bg-dark-950 rounded-2xl overflow-hidden border border-white/5 flex items-center justify-center cursor-zoom-in relative group"
+                onClick={() => setIsZoomed(true)}
+              >
                 <img
                   src={activeImage}
                   alt={product.rewrittenTitle}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
+                  <span className="opacity-0 group-hover:opacity-100 bg-black/50 text-white px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm transition-opacity">Click to zoom</span>
+                </div>
               </div>
 
               {/* Gallery thumbnails */}
@@ -172,13 +186,17 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-white/5 flex gap-4">
+              <div className="pt-4 border-t border-white/5 flex gap-3 flex-col sm:flex-row">
                 <button
-                  onClick={() => alert('Added to cart!')}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-dark-800 hover:bg-dark-700 text-white font-bold text-sm rounded-xl transition-all border border-white/10"
+                  onClick={handleAddToCart}
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3.5 font-bold text-sm rounded-xl transition-all border ${
+                    addedToCart
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : 'bg-dark-800 hover:bg-dark-700 text-white border-white/10'
+                  }`}
                 >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>Add to Cart</span>
+                  {addedToCart ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{addedToCart ? 'Added to Cart!' : 'Add to Cart'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -187,6 +205,7 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
                   }}
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-violet to-brand-pink hover:opacity-90 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-brand-violet/10"
                 >
+                  <ShoppingCart className="w-4 h-4" />
                   <span>Buy Now</span>
                 </button>
               </div>
@@ -214,6 +233,28 @@ export default function PreviewModal({ product, isAdmin, onClose, onBuy }) {
 
         </div>
       </div>
+
+      {/* Full-screen Image Zoom Overlay */}
+      {isZoomed && (
+        <div className="fixed inset-0 z-[60] bg-dark-950/95 flex items-center justify-center backdrop-blur-xl animate-scale-in" onClick={() => setIsZoomed(false)}>
+          <button
+            onClick={() => setIsZoomed(false)}
+            className="absolute top-6 right-6 p-3 rounded-full bg-dark-800 hover:bg-dark-700 text-white border border-white/10 transition-all z-[70]"
+            title="Close Zoom"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={activeImage}
+            alt={product.rewrittenTitle}
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-2xl cursor-zoom-out"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(false);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

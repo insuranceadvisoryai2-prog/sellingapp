@@ -168,10 +168,12 @@ export default function AdminOrders() {
       {/* ─── Orders Grid ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredOrders.map(order => {
-          const product = order.productSnapshot || {};
+          const items = order.items || [];
+          const firstItem = items[0] || {};
           const customer = order.customer || {};
           const colors = statusColor(order.status || 'Pending');
           const isExpanded = expandedId === order.id;
+          const orderTotal = items.reduce((s, i) => s + (Number(i.price) * Number(i.qty || 1)), 0);
 
           return (
             <div
@@ -181,28 +183,28 @@ export default function AdminOrders() {
               {/* Card Header: Product Image + Status */}
               <div className="relative">
                 <img
-                  src={product.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}
-                  alt={product.title || 'Product'}
+                  src={firstItem.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}
+                  alt={firstItem.title || 'Product'}
                   className="w-full h-40 object-cover"
                 />
-                <div className="absolute top-3 left-3 flex gap-2">
+                <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
                   <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold ${colors.bg} ${colors.text} ${colors.border}`}>
                     {order.status || 'Pending'}
                   </span>
                   <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold bg-dark-900/80 backdrop-blur-sm border-white/10 ${paymentColor(order.paymentStatus)}`}>
                     {order.paymentStatus || 'Unpaid'}
                   </span>
-                </div>
-                <div className="absolute bottom-3 right-3 flex flex-col gap-1 items-end">
-                  <span className="text-[10px] px-2 py-1 rounded-lg bg-dark-900/80 backdrop-blur-sm text-emerald-400 font-black border border-white/10 flex items-center gap-1">
-                    <IndianRupee className="w-3 h-3" />
-                    {Number(product.price || 0).toLocaleString('en-IN')}
-                  </span>
-                  {product.specialOfferPrice > 0 && (
-                    <span className="text-[10px] px-2 py-1 rounded-lg bg-amber-900/80 backdrop-blur-sm text-amber-300 font-black border border-amber-500/20 flex items-center gap-1">
-                      Offer: ₹{Number(product.specialOfferPrice).toLocaleString('en-IN')}
+                  {items.length > 1 && (
+                    <span className="text-[10px] px-2.5 py-1 rounded-full border font-bold bg-brand-violet/20 text-brand-violet border-brand-violet/30">
+                      {items.length} items
                     </span>
                   )}
+                </div>
+                <div className="absolute bottom-3 right-3">
+                  <span className="text-[10px] px-2 py-1 rounded-lg bg-dark-900/80 backdrop-blur-sm text-emerald-400 font-black border border-white/10 flex items-center gap-1">
+                    <IndianRupee className="w-3 h-3" />
+                    {orderTotal.toLocaleString('en-IN')}
+                  </span>
                 </div>
               </div>
 
@@ -218,9 +220,12 @@ export default function AdminOrders() {
                   </span>
                 </div>
 
-                {/* Product Title */}
+                {/* First product title + more badge */}
                 <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">
-                  {product.title || 'Product details unavailable'}
+                  {firstItem.title || 'Product details unavailable'}
+                  {items.length > 1 && (
+                    <span className="ml-2 text-[10px] font-bold text-brand-pink">+{items.length - 1} more</span>
+                  )}
                 </h3>
 
                 {/* Customer Quick Info */}
@@ -250,29 +255,28 @@ export default function AdminOrders() {
                   {isExpanded ? 'Less details' : 'Full details'}
                 </button>
 
-                {/* Expanded: Shipping & Notes */}
+                {/* Expanded: Items list + Shipping + Notes */}
                 {isExpanded && (
                   <div className="space-y-3 pt-2 border-t border-white/5 animate-fade-in">
-                    {/* Price Breakdown */}
-                    <div className="space-y-1">
+
+                    {/* Items Ordered */}
+                    <div className="space-y-1.5">
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                        <IndianRupee className="w-3 h-3 text-emerald-400" /> Price Details
+                        <Package className="w-3 h-3 text-brand-pink" /> Items Ordered
                       </h4>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-dark-950/40 p-2.5 rounded-xl border border-white/5 text-center">
-                          <span className="text-[9px] text-slate-500 font-bold block mb-1">SELLING</span>
-                          <span className="text-sm text-emerald-400 font-bold">₹{Number(product.price || 0).toLocaleString('en-IN')}</span>
+                      {items.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-dark-950/40 p-2.5 rounded-xl border border-white/5">
+                          <img src={item.image || ''} alt={item.title} className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-white line-clamp-1">{item.title}</p>
+                            <p className="text-[10px] text-slate-400">Qty: {item.qty} × ₹{Number(item.price).toLocaleString('en-IN')}</p>
+                          </div>
+                          <span className="text-xs font-black text-emerald-400 shrink-0">₹{(Number(item.price) * Number(item.qty || 1)).toLocaleString('en-IN')}</span>
                         </div>
-                        <div className="bg-dark-950/40 p-2.5 rounded-xl border border-white/5 text-center">
-                          <span className="text-[9px] text-slate-500 font-bold block mb-1">MRP</span>
-                          <span className="text-sm text-slate-300 font-bold">{product.originalPrice || 'N/A'}</span>
-                        </div>
-                        <div className={`p-2.5 rounded-xl border text-center ${product.specialOfferPrice > 0 ? 'bg-amber-950/20 border-amber-500/20' : 'bg-dark-950/40 border-white/5'}`}>
-                          <span className="text-[9px] text-slate-500 font-bold block mb-1">OFFER</span>
-                          <span className={`text-sm font-bold ${product.specialOfferPrice > 0 ? 'text-amber-400' : 'text-slate-600'}`}>
-                            {product.specialOfferPrice > 0 ? `₹${Number(product.specialOfferPrice).toLocaleString('en-IN')}` : 'None'}
-                          </span>
-                        </div>
+                      ))}
+                      <div className="flex justify-between px-1 pt-1 border-t border-white/5">
+                        <span className="text-[10px] font-bold text-slate-400">Order Total</span>
+                        <span className="text-xs font-black text-emerald-400">₹{orderTotal.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
 
@@ -304,21 +308,6 @@ export default function AdminOrders() {
                         className="w-full glass-input rounded-xl px-3 py-2 text-xs text-white resize-none"
                       />
                     </div>
-                    
-                    {/* Source URL */}
-                    {product.originalUrl && (
-                      <div className="pt-2">
-                        <a 
-                          href={product.originalUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-lg bg-brand-pink/10 hover:bg-brand-pink/20 text-[10px] font-bold text-brand-pink border border-brand-pink/20 transition-all"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View Source Product
-                        </a>
-                      </div>
-                    )}
                   </div>
                 )}
 

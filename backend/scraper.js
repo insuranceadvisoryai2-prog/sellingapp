@@ -349,6 +349,161 @@ async function tryPuppeteerScrape(url) {
 }
 
 // ————————————————————————————————————————————————————————————————————————————
+// METHOD 1.5: Extract from JSON-LD structured data (most reliable for Meesho)
+// ————————————————————————————————————————————————————————————————————————————
+async function tryLdJsonScrape(url) {
+  console.log('  → [Method 1.5] JSON-LD structured data extraction...');
+  try {
+    const response = await axios.get(url, {
+      headers: BROWSER_HEADERS,
+      timeout: 20000,
+      maxRedirects: 5,
+      validateStatus: s => s < 500,
+    });
+
+    if (response.status === 403) {
+      console.log('  ⚠ [Method 1.5] 403 Forbidden');
+      return null;
+    }
+
+    const html = response.data;
+    const $ = cheerio.load(html);
+
+    // --- Extract JSON-LD structured data ---
+    let productLd = null;
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const data = JSON.parse($(el).html());
+        if (data['@type'] === 'Product') {
+          productLd = data;
+        } else if (Array.isArray(data)) {
+          const found = data.find(d => d['@type'] === 'Product');
+          if (found) productLd = found;
+        }
+      } catch (e) { /* skip invalid JSON */ }
+    });
+
+    if (!productLd || !productLd.name) {
+      console.log('  ⚠ [Method 1.5] No Product JSON-LD found');
+      return null;
+    }
+
+    console.log(`  ✅ [Method 1.5] Found JSON-LD Product: "${productLd.name}"`);
+
+    // Extract title
+    const title = productLd.name || '';
+
+    // Extract images from JSON-LD
+    let images = [];
+    if (productLd.image) {
+      const imgArr = Array.isArray(productLd.image) ? productLd.image : [productLd.image];
+      images = imgArr.map(img => {
+        if (typeof img === 'string') return img;
+        if (img && img.url) return img.url;
+        return null;
+      }).filter(Boolean);
+    }
+
+    // Convert .avif to .webp for wider browser support, and try to get higher-res versions
+    images = images.map(img => {
+      let cleaned = img.replace(/\?width=\d+/g, '');
+      // Try to get higher res by replacing _512 with _1200
+      cleaned = cleaned.replace(/_512\./g, '_1200.');
+      return cleaned;
+    });
+
+    // Also scan HTML for additional meesho CDN images
+    const cdnRegex = /https:\/\/images\.meesho\.com\/images\/products\/[^\s"'>\)]+/g;
+    const cdnMatches = html.match(cdnRegex) || [];
+    for (const match of cdnMatches) {
+      let clean = match.replace(/\\/g, '').split(/["')>\s]/)[0];
+      if (clean && !images.some(existing => existing.includes(clean.split('?')[0].split('_')[0]))) {
+        images.push(clean);
+      }
+    }
+
+    // Extract price
+    const offers = productLd.offers || {};
+    const price = parsePrice(offers.price || 0);
+    const originalPrice = `₹${price}`;
+
+    // Extract description from <meta name="description"> (has full product details)
+    let description = '';
+    const metaDesc = $('meta[name="description"]').attr('content') || '';
+    if (metaDesc && metaDesc.length > 30) {
+      description = metaDesc;
+    }
+
+    // Also try og:description as supplement
+    if (!description) {
+      description = $('meta[property="og:description"]').attr('content') || '';
+    }
+
+    // Extract specs from the meta description
+    const specs = {};
+    
+    // Parse key-value pairs from description (e.g., "Fabric: Cotton Blend")
+    const specLines = description.split('\n');
+    for (const line of specLines) {
+      const colonMatch = line.match(/^([^:]+):\s*(.+)$/);
+      if (colonMatch && colonMatch[1].trim().length < 40 && colonMatch[2].trim().length < 200) {
+        const key = colonMatch[1].trim();
+        const val = colonMatch[2].trim();
+        // Skip lines that are too long (probably the main description text)
+        if (!key.toLowerCase().startsWith('name') && val.length < 150) {
+          specs[key] = val;
+        }
+      }
+    }
+
+    // Extract brand
+    if (productLd.brand) {
+      const brandName = typeof productLd.brand === 'string' ? productLd.brand : productLd.brand.name;
+      if (brandName) specs['Brand'] = brandName;
+    }
+
+    // Extract rating
+    if (productLd.aggregateRating) {
+      specs['Rating'] = `${productLd.aggregateRating.ratingValue}/5 (${productLd.aggregateRating.reviewCount} reviews)`;
+    }
+
+    // Extract SKU
+    if (productLd.sku) {
+      specs['SKU'] = productLd.sku;
+    }
+
+    // Extract category from breadcrumb JSON-LD
+    let categoryHint = '';
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const data = JSON.parse($(el).html());
+        if (data['@type'] === 'BreadcrumbList' && data.itemListElement) {
+          const items = data.itemListElement;
+          // Get the second-to-last breadcrumb as category
+          if (items.length >= 3) {
+            categoryHint = items[items.length - 2].name || '';
+          }
+        }
+      } catch (e) { /* skip */ }
+    });
+
+    return {
+      title: String(title).trim(),
+      price,
+      originalPrice,
+      images,
+      description: description.trim(),
+      specifications: specs,
+      category_hint: categoryHint,
+      source: 'ld-json',
+    };
+  } catch (err) {
+    console.log(`  ⚠ [Method 1.5] Error: ${err.message}`);
+    return null;
+  }
+}
+
+// ————————————————————————————————————————————————————————————————————————————
 // METHOD 2: HTTP page scrape with browser headers
 // ————————————————————————————————————————————————————————————————————————————
 async function tryHttpScrape(url) {
@@ -495,6 +650,11 @@ async function scrapeMeeshoProduct(url) {
   // Try Method 0: Meesho search API exact match (fast and usually has images/prices)
   data = await tryMeeshoSearchApi(url);
 
+  // Try Method 1.5: JSON-LD structured data extraction
+  if (!data || !data.title) {
+    data = await tryLdJsonScrape(url);
+  }
+
   // Try Method 1: Puppeteer (most accurate)
   if (!data || !data.title) {
     data = await tryPuppeteerScrape(url);
@@ -549,17 +709,37 @@ function parseFromHtml(html) {
     }
   }
 
+  // Try JSON-LD structured data
+  let ldJsonProduct = null;
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const data = JSON.parse($(el).html());
+      if (data['@type'] === 'Product') {
+        ldJsonProduct = data;
+      } else if (Array.isArray(data)) {
+        const found = data.find(d => d['@type'] === 'Product');
+        if (found) ldJsonProduct = found;
+      }
+    } catch (e) { /* skip */ }
+  });
+
   // Get title
-  const title = nextDataProduct?.hero_product_name || nextDataProduct?.name || nextDataProduct?.title || nextDataProduct?.product_name || nextDataProduct?.description || $('h1').first().text().trim() || 'Unknown Product';
+  const title = nextDataProduct?.hero_product_name || nextDataProduct?.name || nextDataProduct?.title || nextDataProduct?.product_name || nextDataProduct?.description || ldJsonProduct?.name || $('h1').first().text().trim() || 'Unknown Product';
 
   // Get prices
   const priceInfo = nextDataProduct ? pickPriceInfo(nextDataProduct) : null;
   const priceText = $('span[class*="Price"], h3[class*="Price"], h4[class*="Price"]').first().text().trim();
-  const price = priceInfo ? priceInfo.price : parsePrice(priceText);
-  const originalPriceText = priceInfo ? `₹${priceInfo.originalPrice}` : (priceText || '₹0');
+  const ldPrice = ldJsonProduct?.offers?.price;
+  const price = priceInfo ? priceInfo.price : (ldPrice || parsePrice(priceText));
+  const originalPriceText = priceInfo ? `₹${priceInfo.originalPrice}` : (price ? `₹${price}` : (priceText || '₹0'));
 
   // Extract description
-  const description = nextDataProduct?.full_details || nextDataProduct?.description || nextDataProduct?.product_description || nextDataProduct?.product_details || nextDataProduct?.share_text || '';
+  let description = nextDataProduct?.full_details || nextDataProduct?.description || nextDataProduct?.product_description || nextDataProduct?.product_details || nextDataProduct?.share_text || '';
+  if (!description) {
+    const metaDesc = $('meta[name="description"]').attr('content');
+    if (metaDesc && metaDesc.length > 30) description = metaDesc;
+    else description = $('meta[property="og:description"]').attr('content') || '';
+  }
 
   // Extract category
   const category = nextDataProduct?.sub_sub_category_name || nextDataProduct?.category_name || nextDataProduct?.subcategory || nextDataProduct?.category || '';
@@ -575,6 +755,18 @@ function parseFromHtml(html) {
     const nextImages = extractAllImages(nextDataProduct);
     for (const img of nextImages) {
       if (!imgs.includes(img)) imgs.push(img);
+    }
+  }
+
+  // 1.5 If we got JSON-LD images, use them
+  if (ldJsonProduct && ldJsonProduct.image) {
+    const imgArr = Array.isArray(ldJsonProduct.image) ? ldJsonProduct.image : [ldJsonProduct.image];
+    for (const img of imgArr) {
+      let url = typeof img === 'string' ? img : (img.url || '');
+      if (url) {
+        url = url.replace(/\?width=\d+/g, '').replace(/_512\./g, '_1200.');
+        if (!imgs.includes(url)) imgs.push(url);
+      }
     }
   }
 

@@ -111,18 +111,35 @@ function getOrders(status = null) {
   const orders = readJson(ORDERS_FILE);
   const products = getProducts();
   const normalized = orders.map(order => {
-    const product = products.find(item => item.id === order.productId);
+    // Support legacy orders that had productSnapshot instead of items
+    let items = order.items;
+    if (!items && order.productSnapshot) {
+      items = [{
+        productId: order.productId || null,
+        title: order.productSnapshot.title || 'Unknown Product',
+        price: order.productSnapshot.price || 0,
+        qty: 1,
+        image: order.productSnapshot.image || '',
+        subcategory: order.productSnapshot.subcategory || '',
+      }];
+    }
+    if (!items) {
+      // Try to reconstruct from live product
+      const product = products.find(p => p.id === order.productId);
+      items = product ? [{
+        productId: product.id,
+        title: product.rewrittenTitle || product.originalTitle,
+        price: product.price,
+        qty: 1,
+        image: product.images?.[0] || '',
+        subcategory: product.subcategory || '',
+      }] : [];
+    }
     return {
       status: 'Pending',
       paymentStatus: 'Unpaid',
       ...order,
-      productSnapshot: order.productSnapshot || (product ? {
-        id: product.id,
-        title: product.rewrittenTitle || product.originalTitle,
-        price: product.price,
-        image: product.images && product.images[0] ? product.images[0] : '',
-        subcategory: product.subcategory,
-      } : null),
+      items,
     };
   });
 
@@ -137,8 +154,7 @@ function saveOrder(order) {
   const orders = getOrders();
   const newOrder = {
     id: order.id || `ord_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
-    productId: order.productId || null,
-    productSnapshot: order.productSnapshot || null,
+    items: Array.isArray(order.items) ? order.items : [],
     customer: order.customer || {},
     status: order.status || 'Pending',
     paymentStatus: order.paymentStatus || 'Unpaid',

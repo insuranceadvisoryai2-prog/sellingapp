@@ -1,7 +1,9 @@
-import React from 'react';
-import { ExternalLink, Tag, IndianRupee, ShoppingCart, Share2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Tag, IndianRupee, ShoppingCart, Share2, Plus, Check } from 'lucide-react';
 
-export default function ProductCard({ product, onViewDetails, onBuy }) {
+export default function ProductCard({ product, onViewDetails, onBuy, onAddToCart }) {
+  const [added, setAdded] = useState(false);
+
   const mainImage = product.images && product.images[0]
     ? product.images[0]
     : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500';
@@ -14,15 +16,22 @@ export default function ProductCard({ product, onViewDetails, onBuy }) {
       url: window.location.href,
     };
     if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error('Share failed:', err);
-      }
+      try { await navigator.share(shareData); } catch (err) {}
     } else {
       navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-      alert('Link copied to clipboard!');
     }
+  };
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    if (onAddToCart) onAddToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1800);
+  };
+
+  const handleBuyNow = (e) => {
+    e.stopPropagation();
+    if (onBuy) onBuy(product);
   };
 
   return (
@@ -58,44 +67,62 @@ export default function ProductCard({ product, onViewDetails, onBuy }) {
       {/* Product Details Panel */}
       <div className="p-5 flex flex-col flex-grow justify-between space-y-4">
         <div className="space-y-2">
-          {/* Rewritten AI Title */}
           <h3 className="text-sm font-bold text-white line-clamp-2 leading-snug font-sans group-hover:text-brand-pink transition-colors duration-200">
             {product.rewrittenTitle}
           </h3>
         </div>
 
-          {/* Pricing & Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-white/5">
-            <div className="flex items-baseline gap-2 text-white">
-              <IndianRupee className="w-4 h-4 text-emerald-400 self-center shrink-0" />
-              {product.specialOfferPrice > 0 ? (
-                <>
-                  <span className="text-lg font-extrabold tracking-tight text-amber-400">
-                    {product.specialOfferPrice.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-xs text-slate-500 line-through">
-                    ₹{product.price.toLocaleString('en-IN')}
-                  </span>
-                </>
-              ) : (
+        {/* Pricing & Actions */}
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <div className="flex items-baseline gap-2 text-white">
+            <IndianRupee className="w-4 h-4 text-emerald-400 self-center shrink-0" />
+            {product.specialOfferPrice > 0 ? (
+              <>
+                <span className="text-lg font-extrabold tracking-tight text-amber-400">
+                  {product.specialOfferPrice.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-slate-500 line-through">
+                  ₹{product.price.toLocaleString('en-IN')}
+                </span>
+              </>
+            ) : (
+              <>
                 <span className="text-lg font-extrabold tracking-tight">
                   {product.price.toLocaleString('en-IN')}
                 </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onBuy) onBuy(product);
-                }}
-                className="flex items-center gap-1 text-xs text-white bg-brand-pink hover:bg-brand-pink/90 px-3 py-1.5 rounded-lg border border-white/10 transition-colors"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Buy
-              </button>
-            </div>
+                {product.originalPrice && (
+                  <span className="text-xs text-slate-500 line-through">
+                    ₹{typeof product.originalPrice === 'number' ? product.originalPrice.toLocaleString('en-IN') : product.originalPrice}
+                  </span>
+                )}
+              </>
+            )}
           </div>
+
+          <div className="flex gap-2">
+            {/* Add to Cart */}
+            <button
+              onClick={handleAddToCart}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-xl border transition-all duration-300 ${
+                added
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-dark-800 text-white hover:bg-dark-700 border-white/10'
+              }`}
+            >
+              {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {added ? 'Added!' : 'Add to Cart'}
+            </button>
+
+            {/* Buy Now */}
+            <button
+              onClick={handleBuyNow}
+              className="flex items-center gap-1 text-xs text-white bg-brand-pink hover:bg-brand-pink/90 px-3 py-2 rounded-xl border border-white/10 transition-colors font-bold"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Buy
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
