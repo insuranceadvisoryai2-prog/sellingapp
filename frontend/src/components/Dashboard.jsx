@@ -61,7 +61,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
       const scraped = await scrapeRes.json();
       setScrapedData(scraped);
 
-      // Step 2: Trigger AI rewrite
+      // Step 2: Optimize listing
       setLoadingStep('rewriting');
       const rewriteRes = await fetch(`${API_URL}/api/rewrite`, {
         method: 'POST',
@@ -71,7 +71,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
 
       if (!rewriteRes.ok) {
         const errData = await rewriteRes.json();
-        throw new Error(errData.error || 'AI rewrite generation failed.');
+        throw new Error(errData.error || 'Listing optimization failed.');
       }
 
       const ai = await rewriteRes.json();
@@ -142,7 +142,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                 Republish Supplier Products
               </h2>
               <p className="text-sm text-slate-400">
-                Paste a product link from the Supplier. We'll scrape it, optimize it with Claude AI, auto-categorize it, and add it to your premium product catalog.
+                Paste a product link from the Supplier. We'll fetch it, optimize the listing automatically, auto-categorize it, and add it to your premium product catalog.
               </p>
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>Fetch & Rewrite</span>
+                  <span>Fetch & Optimize</span>
                 </>
               )}
             </button>
@@ -184,7 +184,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
               <div className="flex items-center gap-2 text-slate-300">
                 <RefreshCw className="w-4 h-4 animate-spin text-brand-pink" />
                 {loadingStep === 'scraping' && <span>Fetching Supplier page source...</span>}
-                {loadingStep === 'rewriting' && <span>Invoking Claude AI copywriter...</span>}
+                {loadingStep === 'rewriting' && <span>Optimizing product listing...</span>}
               </div>
               <div className="w-64 bg-dark-700 h-1.5 rounded-full overflow-hidden">
                 <div 
@@ -232,7 +232,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                         const scraped = await res.json();
                         setScrapedData(scraped);
 
-                        // Step 2: Trigger AI rewrite step
+                        // Step 2: Trigger optimize step
                         setLoadingStep('rewriting');
                         const rewriteRes = await fetch(`${API_URL}/api/rewrite`, {
                           method: 'POST',
@@ -241,7 +241,7 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                         });
                         if (!rewriteRes.ok) {
                           const errData = await rewriteRes.json();
-                          throw new Error(errData.error || 'AI rewrite generation failed.');
+                          throw new Error(errData.error || 'Listing optimization failed.');
                         }
                         const ai = await rewriteRes.json();
                         setAiData(ai);
@@ -331,15 +331,15 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
               )}
             </div>
 
-            {/* Right: AI-Optimized Listing editor */}
+            {/* Right: Smart Optimized Listing editor */}
             <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-6 relative bg-gradient-to-br from-dark-900 to-dark-800 shadow-2xl ring-1 ring-brand-purple/20">
               <div className="absolute -top-1.5 -right-1.5 px-3 py-1 bg-gradient-to-r from-brand-violet to-brand-pink rounded-full text-[10px] font-black uppercase tracking-widest shadow-md text-white">
-                Claude AI active
+                Smart Optimizer
               </div>
               
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-pink flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> AI-Generated Catalog Copy
+                  <Sparkles className="w-3.5 h-3.5" /> Optimized Catalog Copy
                 </span>
                 <span className="text-xs text-slate-400">Editable before publishing</span>
               </div>
@@ -403,49 +403,91 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
                   />
                 </div>
 
-                {/* Images override */}
-                <div className="space-y-2 col-span-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Product Images ({editedImages.length})</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {editedImages.slice(0, 5).map((img, i) => (
-                      <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 group shrink-0">
-                        <img src={img} className="w-full h-full object-cover" />
-                        <button 
-                          onClick={() => setEditedImages(editedImages.filter((_, idx) => idx !== i))}
-                          className="absolute inset-0 bg-red-500/80 items-center justify-center hidden group-hover:flex text-white font-bold text-[10px]"
-                        >
-                          Remove
-                        </button>
+                {/* Images Section */}
+                <div className="space-y-3 col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Product Images ({editedImages.length} selected)</label>
+
+                  {/* Scraped Meesho images — click to toggle */}
+                  {scrapedData?.images?.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-brand-pink font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span>📦</span> Supplier Images — click to select / deselect
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {scrapedData.images.map((img, i) => {
+                          const selected = editedImages.includes(img);
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => selected
+                                ? setEditedImages(editedImages.filter(x => x !== img))
+                                : setEditedImages([...editedImages, img].slice(0, 8))
+                              }
+                              className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all shrink-0 ${selected ? 'border-brand-pink ring-2 ring-brand-pink/40 scale-105' : 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/30'}`}
+                            >
+                              <img src={img} className="w-full h-full object-cover" onError={e => { e.target.src='https://placehold.co/64x64/111/444?text=?'; }} />
+                              {selected && (
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-brand-pink rounded-full flex items-center justify-center">
+                                  <span className="text-white text-[8px] font-black">✓</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                    {editedImages.length < 5 && (
-                      <label className="w-16 h-16 bg-dark-800 hover:bg-brand-pink/20 text-slate-300 hover:text-brand-pink border border-dashed border-white/20 rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center shrink-0 text-[10px] font-bold uppercase">
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          multiple
-                          className="hidden" 
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files).slice(0, 5 - editedImages.length);
-                            if (files.length > 0) {
-                              Promise.all(files.map(file => {
-                                return new Promise((resolve) => {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => resolve(reader.result);
-                                  reader.readAsDataURL(file);
-                                });
-                              })).then(newImages => {
-                                setEditedImages([...newImages, ...editedImages].slice(0, 5));
-                              });
-                            }
-                          }} 
-                        />
-                        <span className="text-xl leading-none mb-1">+</span>
-                        Add
-                      </label>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Manually added images (URL or local) */}
+                  {editedImages.filter(img => !scrapedData?.images?.includes(img)).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase">Manually Added</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {editedImages.filter(img => !scrapedData?.images?.includes(img)).map((img, i) => (
+                          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 group shrink-0">
+                            <img src={img} className="w-full h-full object-cover" onError={e => { e.target.src='https://placehold.co/64x64/111/444?text=?'; }} />
+                            <button onClick={() => setEditedImages(editedImages.filter(x => x !== img))}
+                              className="absolute inset-0 bg-red-500/80 items-center justify-center hidden group-hover:flex text-white font-bold text-[10px]">
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add from URL */}
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      id="imgUrlInput"
+                      placeholder="Paste any image URL and press Add..."
+                      className="flex-1 px-3 py-2 rounded-xl glass-input text-white text-xs border-white/10"
+                    />
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('imgUrlInput');
+                        const val = input?.value?.trim();
+                        if (val && !editedImages.includes(val)) {
+                          setEditedImages([...editedImages, val].slice(0, 8));
+                          input.value = '';
+                        }
+                      }}
+                      className="px-4 py-2 bg-brand-violet hover:opacity-80 text-white text-xs font-bold rounded-xl transition-all whitespace-nowrap"
+                    >+ Add URL</button>
                   </div>
-                  <span className="text-[10px] text-slate-500 block">Upload up to 5 local images. Hover over an image to remove it.</span>
+
+                  {/* Local upload */}
+                  <label className="flex items-center gap-2 w-full py-2 px-4 bg-dark-800 hover:bg-dark-700 border border-dashed border-white/20 rounded-xl cursor-pointer transition-all text-xs text-slate-400 hover:text-white">
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files).slice(0, 8 - editedImages.length);
+                        Promise.all(files.map(f => new Promise(res => { const r = new FileReader(); r.onloadend = () => res(r.result); r.readAsDataURL(f); })))
+                          .then(imgs => setEditedImages([...editedImages, ...imgs].slice(0, 8)));
+                      }}
+                    />
+                    <span className="text-brand-pink font-black">↑</span> Upload from your device (up to 8 total)
+                  </label>
                 </div>
               </div>
 

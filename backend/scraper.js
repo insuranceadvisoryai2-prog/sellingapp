@@ -634,6 +634,94 @@ function trySlugFallback(url) {
 }
 
 // ————————————————————————————————————————————————————————————————————————————
+// METHOD 0.5: Meesho Catalog Detail API (fetch full images using product ID)
+// ————————————————————————————————————————————————————————————————————————————
+async function tryMeeshoCatalogApi(url) {
+  const productId = extractProductId(url);
+  if (!productId) return null;
+  console.log(`  → [Method 0.5] Meesho catalog detail API for product ID: ${productId}...`);
+
+  // Try multiple Meesho internal API endpoints
+  const endpoints = [
+    {
+      method: 'post',
+      url: 'https://www.meesho.com/api/v1/products/catalog_details',
+      body: { product_id: productId },
+    },
+    {
+      method: 'post',
+      url: 'https://www.meesho.com/api/v1/products/detail',
+      body: { product_id: productId },
+    },
+    {
+      method: 'get',
+      url: `https://www.meesho.com/api/v1/catalogs/${productId}`,
+    },
+    {
+      method: 'post',
+      url: 'https://www.meesho.com/api/v1/products/catalog',
+      body: { catalog_id: productId },
+    },
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = ep.method === 'post'
+        ? await axios.post(ep.url, ep.body, { headers: API_HEADERS, timeout: 10000, proxy: false })
+        : await axios.get(ep.url, { headers: API_HEADERS, timeout: 10000, proxy: false });
+
+      const data = res.data;
+      if (!data) continue;
+
+      // Extract images from any response shape
+      const images = extractAllImages(data);
+      if (images.length === 0) continue;
+
+      // Try to extract price and title too
+      const raw = deepFindProduct(data) || data;
+      const priceInfo = pickPriceInfo(raw);
+      const title = raw.hero_product_name || raw.name || raw.title || raw.product_name || '';
+
+      if (images.length > 0) {
+        console.log(`  ✅ [Method 0.5] Got ${images.length} images from catalog API`);
+        const product = buildProductData(raw, url);
+        if (product.images.length === 0) product.images = images;
+        return product;
+      }
+    } catch (e) {
+      // Try next endpoint
+    }
+  }
+
+  // Also try fetching via the search API with product_id as query
+  try {
+    const res = await axios.post(
+      'https://www.meesho.com/api/v1/products/search',
+      { query: productId, type: 'text_search', page: 1, offset: 0, limit: 10 },
+      { headers: API_HEADERS, timeout: 12000, proxy: false }
+    );
+    const catalogs = res.data?.catalogs || res.data?.products || [];
+    const exact = catalogs.find(c =>
+      String(c.product_id || '').toLowerCase() === productId.toLowerCase() ||
+      String(c.catalog_id || '').toLowerCase() === productId.toLowerCase()
+    );
+    if (exact) {
+      const images = extractAllImages(exact);
+      if (images.length > 0) {
+        exact.__source = 'meesho-catalog-id-search';
+        const product = buildProductData(exact, url);
+        console.log(`  ✅ [Method 0.5] Product ID search got ${product.images.length} images`);
+        return product;
+      }
+    }
+  } catch (e) { /* skip */ }
+
+  console.log('  ⚠ [Method 0.5] No images found via catalog API');
+  return null;
+}
+
+
+// ————————————————————————————————————————————————————————————————————————————
 // MAIN SCRAPER
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function scrapeMeeshoProduct(url) {
