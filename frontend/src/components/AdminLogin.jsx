@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, ArrowRight } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://witty-yak-13.loca.lt';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function AdminLogin({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
