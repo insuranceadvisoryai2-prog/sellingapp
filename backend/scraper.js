@@ -615,15 +615,21 @@ async function tryMeeshoSearchApi(url) {
   console.log(`  OK [Method 0] Search API matched product with confidence ${product.matchConfidence}`);
   return product;
 }
-function trySlugFallback(url) {
+async function trySlugFallback(url) {
   console.log('  → [Method 3] URL slug fallback...');
   const productId = extractProductId(url);
-  const slugMatch = url.match(/meesho\.com\/([^/]+)\/p\//);
-  if (!slugMatch) return null;
+  if (productId) {
+    try {
+      const catalogData = await tryMeeshoCatalogApi(url);
+      if (catalogData && catalogData.title && catalogData.images && catalogData.images.length > 0) {
+        console.log('  ✅ [Method 3] Resolved slug fallback to live catalog details');
+        return catalogData;
+      }
+    } catch (e) { /* skip */ }
+  }
 
-  const title = slugMatch[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   return {
-    title,
+    title: titleFromSlug(extractSlug(url)),
     price: 0,
     originalPrice: '₹0',
     images: [],
@@ -763,7 +769,7 @@ async function scrapeMeeshoProduct(url) {
 
   // Try Method 3: URL slug fallback
   if (!data || !data.title) {
-    data = trySlugFallback(url);
+    data = await trySlugFallback(url);
   }
 
   if (!data || !data.title) {
