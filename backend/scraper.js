@@ -31,6 +31,8 @@ const API_HEADERS = {
   'Content-Type': 'application/json',
   'Origin': 'https://www.meesho.com',
   'Referer': 'https://www.meesho.com/',
+  'X-Meesho-Platform': 'web',
+  'X-Meesho-Client': 'web',
 };
 
 const BROWSER_HEADERS = {
