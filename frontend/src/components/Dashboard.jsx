@@ -24,13 +24,13 @@ export default function Dashboard({ onPublishSuccess, subcategories }) {
     if (scrapedData) {
       setEditedPrice(scrapedData.price || 0);
       setEditedImages(scrapedData.images || []);
+      setEditedDesc(scrapedData.description || '');
     }
   }, [scrapedData]);
 
   useEffect(() => {
     if (aiData) {
       setEditedTitle(aiData.rewritten_title || '');
-      setEditedDesc(aiData.selling_description || '');
       setEditedSubcat(aiData.subcategory || '');
     }
   }, [aiData]);
