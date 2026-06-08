@@ -738,6 +738,14 @@ async function scrapeMeeshoProduct(url) {
   // Try Method 0: Meesho search API exact match (fast and usually has images/prices)
   data = await tryMeeshoSearchApi(url);
 
+  // Try Method 0.5: Meesho catalog API (direct endpoint queries)
+  if (!data || !data.title || !data.images || data.images.length === 0) {
+    const catalogData = await tryMeeshoCatalogApi(url);
+    if (catalogData && catalogData.title) {
+      data = { ...catalogData, price: catalogData.price || data?.price || 0 };
+    }
+  }
+
   // Try Method 1.5: JSON-LD structured data extraction
   if (!data || !data.title) {
     data = await tryLdJsonScrape(url);
