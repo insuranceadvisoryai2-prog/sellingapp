@@ -1,11 +1,8 @@
-// backend/db.js  — PostgreSQL (Supabase) persistent storage
-// Replaces the flat-file JSON database that resets on server restart
-
 import pg from 'pg';
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
 
 const { Pool } = pg;
-
-pg.defaults.family = 4;
 
 const pool = new Pool({
   host: 'db.iimusjukiunjjvqtnhit.supabase.co',
@@ -15,7 +12,6 @@ const pool = new Pool({
   password: 'RushiSneha@1',
   ssl: { rejectUnauthorized: false },
 });
-
 // ── PRODUCTS ─────────────────────────────────────────────────
 
 export async function getAllProducts() {
