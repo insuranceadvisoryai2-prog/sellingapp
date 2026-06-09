@@ -7,7 +7,8 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: 'postgresql://postgres:RushiSneha%401@db.iimusjukiunjjvqtnhit.supabase.co:5432/postgres?sslmode=require',
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  family: 4,
 });
 
 // ── PRODUCTS ─────────────────────────────────────────────────
