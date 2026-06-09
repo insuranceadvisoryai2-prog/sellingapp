@@ -105,3 +105,30 @@ export async function searchProducts(query) {
 }
 
 export default pool;
+export async function init() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        name        TEXT NOT NULL,
+        description TEXT,
+        price       NUMERIC(18,2) NOT NULL DEFAULT 0,
+        original_price NUMERIC(18,2),
+        image_url   TEXT,
+        images      JSONB DEFAULT '[]',
+        category    TEXT,
+        subcategory TEXT,
+        specifications JSONB DEFAULT '{}',
+        stock       INT NOT NULL DEFAULT 999,
+        is_active   BOOLEAN DEFAULT TRUE,
+        source_url  TEXT,
+        created_at  TIMESTAMPTZ DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Database connected and table verified');
+  } catch (err) {
+    console.error('❌ Database init failed:', err.message);
+    throw err;
+  }
+}
