@@ -6,7 +6,7 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: 'postgresql://postgres:RushiSneha%401@db.iimusjukiunjjvqtnhit.supabase.co:5432/postgres?sslmode=require',
   ssl: { rejectUnauthorized: false }
 });
 
