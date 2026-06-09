@@ -5,10 +5,15 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+pg.defaults.family = 4;
+
 const pool = new Pool({
-  connectionString: 'postgresql://postgres:RushiSneha%401@db.iimusjukiunjjvqtnhit.supabase.co:5432/postgres?sslmode=require',
+  host: 'db.iimusjukiunjjvqtnhit.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: 'RushiSneha@1',
   ssl: { rejectUnauthorized: false },
-  family: 4,
 });
 
 // ── PRODUCTS ─────────────────────────────────────────────────
