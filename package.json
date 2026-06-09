@@ -1,15 +1,21 @@
 {
-  "name": "meesho-scraper-republisher",
+  "name": "wholesalemart-backend",
   "version": "1.0.0",
-  "private": true,
-  "description": "Meesho Product Link Scraper and Auto-Publisher catalog",
+  "type": "module",
+  "main": "server.js",
   "scripts": {
-    "install-all": "npm install --prefix backend && npm install --prefix frontend",
-    "backend": "npm start --prefix backend",
-    "frontend": "npm run dev --prefix frontend",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "puppeteer": "^22.8.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }
