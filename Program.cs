@@ -22,9 +22,12 @@ var connectionString =
 builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseNpgsql(connectionString, npg =>
     {
-        npg.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), null);
+        npg.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            null
+        );
     })
-    .UseSnakeCaseNamingConvention()  // optional — remove if you prefer PascalCase columns
 );
 
 // ── 2. JWT AUTHENTICATION ────────────────────────────────────────────────────
