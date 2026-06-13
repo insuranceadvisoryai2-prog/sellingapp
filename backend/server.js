@@ -158,7 +158,7 @@ app.get('/api/admin/products/pending-count', adminMiddleware, async (req, res) =
   catch { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.post('/api/admin/products', adminMiddleware, async (req, res) => {
+app.post('/api/admin/generate-import-token', adminMiddleware, async (req, res) => {
   try {
     const { name, description, price, original_price, discount_pct,
       image_url, images, image_base64, category, subcategory, brand,
